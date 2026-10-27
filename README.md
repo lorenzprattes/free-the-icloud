@@ -8,7 +8,39 @@ The first launch starts in a **generated demo**. Later launches reopen the last 
 
 ## Download
 
-Prebuilt Apple Silicon builds are on the [Releases page](../../releases). The app is not notarized, so macOS will block the first launch: right-click the app, choose **Open**, then confirm, or run `xattr -dr com.apple.quarantine "Free the iCloud.app"`.
+Prebuilt Apple Silicon builds are on the [Releases page](../../releases). Download the `.zip`, double-click it, and drag **Free the iCloud.app** to your Applications folder.
+
+### Opening an app that is not notarized
+
+This app is not signed with a paid Apple Developer ID or notarized by Apple, so macOS Gatekeeper (its built-in check for apps from unidentified developers) blocks the first launch with a message such as "Apple could not verify…" or "cannot be opened because the developer cannot be verified". That is expected. You only need to approve the app once, and you do not need to turn off any system-wide protection. Pick one method:
+
+**Option 1: System Settings (macOS 15 Sequoia or later)**
+
+1. Try to open the app once and dismiss the warning.
+2. Open **System Settings → Privacy & Security** and scroll down to the **Security** section.
+3. Click **Open Anyway** next to the message about "Free the iCloud", then confirm with your password or Touch ID.
+
+**Option 2: Right-click (macOS 14 Sonoma)**
+
+Right-click (or Control-click) the app, choose **Open**, then click **Open** in the dialog.
+
+**Option 3: Terminal (any version)**
+
+This removes the "downloaded from the internet" flag from this one app only:
+
+```sh
+xattr -dr com.apple.quarantine "/Applications/Free the iCloud.app"
+```
+
+Do not run `sudo spctl --master-disable`, which switches Gatekeeper off for every app on your Mac. It is not needed here.
+
+Only do this if you trust the source. You can check that your download is the unmodified release by comparing its checksum with the one shown on the release page:
+
+```sh
+shasum -a 256 ~/Downloads/Free-the-iCloud-0.4.0-macOS-arm64.zip
+```
+
+If you would rather not bypass Gatekeeper, read the source and build the app yourself (below). An app you build on your own Mac is not quarantined.
 
 ## Build and open
 
