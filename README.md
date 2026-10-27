@@ -12,14 +12,14 @@ Prebuilt Apple Silicon builds are on the [Releases page](../../releases). The ap
 
 ## Build and open
 
-Requires macOS 14 or newer and Apple's Swift command-line tools. Developed and tested on Apple Silicon using Swift 6.4 in Swift 5 language mode; other Mac/OS combinations have not been validated.
+Requires macOS 14 or newer and Apple's Swift command-line tools (Xcode is not required). Built with Swift 6.4 in Swift 5 language mode and tested on Apple Silicon; other Mac and macOS combinations have not been validated.
 
 ```sh
 bash scripts/build.sh
 open 'dist/Free the iCloud.app'
 ```
 
-The build produces a locally ad-hoc-signed app. It is not notarized or prepared for public distribution. The build script disables SwiftPM's nested manifest sandbox because the development runner already has a filesystem sandbox; the package has no external dependencies or build plugins. Xcode is not required.
+The build produces a locally ad-hoc-signed app. It is not notarized. The build script passes `--disable-sandbox` to SwiftPM so the build also works inside restricted environments; the package has no external dependencies or build plugins.
 
 ## Use the app
 
@@ -95,9 +95,9 @@ Every launch resets dry-run to on. Reopening a saved scan loads cached metadata 
 
 Cancellation and failure cleanup removes only app-created temporary files. Deleting a Photos item or replacing a video requires an explicit confirmation; those actions delete originals through PhotoKit. The app never edits Photos database files or empties Recently Deleted. Reports and video exports are rejected inside Photos library bundles.
 
-## Important prototype limits
+## Limitations
 
-- **The real Photos integration has not been exercised against your library.** Album creation, deletion, replacement and Photos video staging are implemented but require a separately approved real-library validation. No Photos permission was requested during development.
+- **Real-library testing is limited.** The author tested the app by hand on one personal Mac and Photos library. The automated checks use generated fixtures and a simulated library only, and the PhotoKit mutation adapter is not covered by them. Your library, macOS version and iCloud setup may behave differently, so back up first and try a few items before anything larger.
 - System Photo Library only. Other libraries, Shared Library edge cases, and shared-album behavior are not validated. Hidden assets are excluded.
 - Size measurement may stream every locally available original once. It can be I/O-heavy on a large library. Cached results reduce later work. These totals are not physical disk usage or authoritative iCloud storage totals.
 - Photo inspection requests a local preview up to 4096 pixels; grid thumbnails are up to 1200 pixels. Zoom beyond the preview resolution enlarges it. Cached previews are labelled when a larger local preview is unavailable. Groups are suggestions, not safe-to-delete judgments. Perceptual indexing can miss large crops or strongly changed viewpoints; it is not semantic clustering.
@@ -112,7 +112,7 @@ Cancellation and failure cleanup removes only app-created temporary files. Delet
 
 ## Checks
 
-This Mac has command-line tools without XCTest. A dependency-free executable provides the core checks:
+The package builds with only the command-line tools, which do not include XCTest, so a dependency-free executable provides the core checks:
 
 ```sh
 swift run --disable-sandbox -c release CoreChecks
@@ -122,9 +122,9 @@ The checks generate their own images, video, and test audio in temporary directo
 
 AppKit bitmap captures omit hardware video layers, so player readiness and playback are checked separately.
 
-These runtime checks need ordinary access to macOS media services. A restricted agent sandbox can deny Uniform Type Identifier services and video encoders; run them in a normal local terminal. Such service denial is not an application test result.
+These runtime checks need ordinary access to macOS media services. A restricted sandbox (for example an agent or CI sandbox) can deny Uniform Type Identifier services and video encoders; run them in a normal local terminal.
 
-Recorded validation on 1 October 2026: all 41 core checks passed. The revised Smaller file preset produced copies 61–89% smaller than High quality on generated SDR (with and without audio), HLG/Dolby Vision and PQ clips; this is a fixture measurement, not a guarantee for camera footage. Tests retain audio channel count, check PCM-to-AAC conversion, and verify old export histories still load. Single-item deletion tests verify that other marked items remain intact. Photo replacement checks cover mandatory visual-review acknowledgement, dry-run and approval barriers, unsupported originals, failed imports, altered copies, stale sources and successful simulated replacement. New tests cover generated HLG/Dolby Vision and PQ video exports through all presets, HDR downscaling to 1080p, ten-bit depth, color tags, bright luma values, portrait orientation, audio, and rejection of an SDR result. Still-photo tests resize direct PQ HDR, adaptive gain-map HDR, SDR and rotated inputs; decoded highlights remain above SDR white, and originals remain unchanged. The app demo exported a resized photo, saved its history, and reopened it along with the existing review and video state without rescanning. The 10,000-record grouping benchmark took about 1.3 seconds. All media was generated locally. Real-library mutations, real-camera HDR edge cases and comprehensive keyboard/accessibility testing remain unverified.
+The core checks currently cover 41 cases and all pass. They exercise the Smaller file preset on generated SDR, HLG/Dolby Vision and PQ clips (copies were 61–89% smaller than High quality; a fixture measurement, not a guarantee for camera footage), audio channel retention and PCM-to-AAC conversion, loading of older export histories, single-item deletion, Photo replacement barriers (review acknowledgement, dry run, unsupported originals, failed imports, altered copies, stale sources, simulated success), HDR video exports through all presets (downscaling, ten-bit depth, color tags, bright luma, portrait orientation, rejecting an SDR result), and still-photo resizing of PQ HDR, adaptive gain-map HDR, SDR and rotated inputs. A 10,000-record grouping benchmark runs in about 1.3 seconds. Real-camera HDR edge cases and comprehensive keyboard/accessibility behavior are not systematically tested.
 
 To capture only the app's generated-demo windows and exercise basic UI state transitions:
 
@@ -141,7 +141,7 @@ This mode uses a separate catalog and generated media under the supplied directo
 
 No API keys, Python runtime, FFmpeg, osxphotos, or downloaded ML weights are needed. The app is deliberately based on the supported [PhotoKit APIs](https://developer.apple.com/documentation/PhotoKit), [local Vision feature prints](https://developer.apple.com/documentation/vision/analyzing-image-similarity-with-feature-print), and [AVFoundation export presets](https://developer.apple.com/documentation/avfoundation/export-presets).
 
-PhotoKit replacement uses a single change block, as described in [Apple’s atomic-update documentation](https://developer.apple.com/documentation/photokit/requesting-changes-to-the-photo-library?changes=_9). Real-library behavior, including album membership and system confirmation dialogs, still requires approved integration testing.
+PhotoKit replacement uses a single change block, as described in [Apple’s atomic-update documentation](https://developer.apple.com/documentation/photokit/requesting-changes-to-the-photo-library?changes=_9). Behavior with other libraries, album setups and system confirmation dialogs is not guaranteed.
 
 
 ## License
